@@ -135,6 +135,33 @@ async function callRelay(input) {
   return text;
 }
 
+function extractRelayText(payload) {
+  const firstChoice = payload?.choices?.[0];
+  const content = firstChoice?.message?.content;
+
+  if (typeof content === "string") {
+    return content;
+  }
+
+  if (Array.isArray(content)) {
+    return content
+      .map((item) => {
+        if (typeof item === "string") {
+          return item;
+        }
+
+        if (item && typeof item === "object" && "text" in item) {
+          return String(item.text);
+        }
+
+        return "";
+      })
+      .join("");
+  }
+
+  return "";
+}
+
 function buildHalfXianEvidenceDigest(request) {
   return {
     questionType: request.domain,
@@ -198,7 +225,7 @@ function buildFinalPrompt(request, digest, insight) {
     "",
     `用户问题：${request.question}`,
     `对象：${insight.focusObject || digest.topicText}`,
-    `风格要求：${request.meta?.stylePrompt || "像街口摊主开口，但不要油滑。"} `,
+    `风格要求：${request.meta?.stylePrompt || "像街口摊主开口，但不要油滑。"}`,
     "原始盘面事实：",
     ...digest.rawFacts.map((item) => `- ${item}`),
     "古文线索：",
@@ -240,33 +267,6 @@ function parseInsightPayload(text) {
     bestEntry: typeof parsed.bestEntry === "string" ? parsed.bestEntry : "",
     tone: typeof parsed.tone === "string" ? parsed.tone : "",
   };
-}
-
-function extractRelayText(payload) {
-  const firstChoice = payload?.choices?.[0];
-  const content = firstChoice?.message?.content;
-
-  if (typeof content === "string") {
-    return content;
-  }
-
-  if (Array.isArray(content)) {
-    return content
-      .map((item) => {
-        if (typeof item === "string") {
-          return item;
-        }
-
-        if (item && typeof item === "object" && "text" in item) {
-          return String(item.text);
-        }
-
-        return "";
-      })
-      .join("");
-  }
-
-  return "";
 }
 
 function isHalfXianRequest(value) {
